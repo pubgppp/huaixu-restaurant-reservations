@@ -1,0 +1,4 @@
+node_modules/
+data/reservations.json
+.env
+.DS_Store
