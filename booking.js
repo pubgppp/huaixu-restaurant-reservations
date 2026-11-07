@@ -31,7 +31,7 @@ export function isBookableDate(value, now = new Date()) {
 
 export function availability(date, bookings, now = new Date()) {
   if (!isBookableDate(date, now)) throw new BookingError('请选择未来 30 天内的有效日期。');
-  const dayBookings = bookings.filter((item) => item.date === date);
+  const dayBookings = bookings.filter((item) => item.date === date && item.status !== 'cancelled');
   const lambRemaining = Math.max(0, DAILY_LAMB_LIMIT - dayBookings.reduce((sum, item) => sum + item.lambQty, 0));
   const slots = Object.fromEntries(TIMES.map((time) => {
     const used = dayBookings.filter((item) => item.time === time).reduce((sum, item) => sum + item.partySize, 0);
@@ -65,8 +65,35 @@ export function createBooking(input, bookings, now = new Date()) {
 
   return {
     id: randomUUID(),
-    code: `HX-${date.replaceAll('-', '')}-${randomUUID().slice(0, 6).toUpperCase()}`,
+    code: `HX-${date.replaceAll('-', '')}-${randomUUID().replaceAll('-', '').slice(0, 16).toUpperCase()}`,
     date, time, partySize, lambQty, name, phone, note,
+    status: 'confirmed',
     createdAt: now.toISOString()
+  };
+}
+
+export function findBooking(input, bookings) {
+  const code = typeof input?.code === 'string' ? input.code.trim().toUpperCase() : '';
+  const phone = typeof input?.phone === 'string' ? input.phone.replace(/\D/g, '') : '';
+  if (!/^HX-\d{8}-[A-F0-9]{6,16}$/.test(code) || phone.length < 7) {
+    throw new BookingError('预约编号或联系电话不正确。', 404);
+  }
+  const booking = bookings.find((item) => item.code === code && item.phone.replace(/\D/g, '') === phone);
+  if (!booking) throw new BookingError('预约编号或联系电话不正确。', 404);
+  return booking;
+}
+
+export function cancelBooking(input, bookings, now = new Date()) {
+  const booking = findBooking(input, bookings);
+  if (booking.status === 'cancelled') throw new BookingError('这笔预约已经取消。', 409);
+  const today = localDate(now);
+  const currentTime = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
+  if (booking.date < today || (booking.date === today && booking.time <= currentTime)) {
+    throw new BookingError('到店时间已到，无法在线取消。', 409);
+  }
+  const cancelled = { ...booking, status: 'cancelled', cancelledAt: now.toISOString() };
+  return {
+    booking: cancelled,
+    bookings: bookings.map((item) => item.id === booking.id ? cancelled : item)
   };
 }

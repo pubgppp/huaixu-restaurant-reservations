@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { availability, createBooking, dateRange, isBookableDate, BookingError } from '../booking.js';
+import { availability, cancelBooking, createBooking, dateRange, findBooking, isBookableDate, BookingError } from '../booking.js';
 
 const now = new Date(2026, 10, 5, 9, 0);
 const bookingInput = { date: '2026-11-06', time: '18:00', partySize: 2, lambQty: 1, name: '李女士', phone: '138 0011 2233', note: '' };
@@ -32,4 +32,28 @@ test('seat capacity applies to each time slot', () => {
 test('rejects invalid contact details and past times', () => {
   assert.throws(() => createBooking({ ...bookingInput, phone: 'abc' }, [], now), BookingError);
   assert.throws(() => createBooking({ ...bookingInput, date: '2026-11-05', time: '11:30' }, [], new Date(2026, 10, 5, 12, 0)), BookingError);
+});
+
+test('lookup requires both booking code and matching phone', () => {
+  const booking = createBooking(bookingInput, [], now);
+  assert.equal(findBooking({ code: booking.code.toLowerCase(), phone: '13800112233' }, [booking]).id, booking.id);
+  assert.throws(() => findBooking({ code: booking.code, phone: '13900112233' }, [booking]), (error) => error.status === 404);
+});
+
+test('cancellation releases both seats and daily lamb stock', () => {
+  const booking = createBooking(bookingInput, [], now);
+  const before = availability(booking.date, [booking], now);
+  assert.equal(before.slots['18:00'], 18);
+  assert.equal(before.lambRemaining, 9);
+  const result = cancelBooking({ code: booking.code, phone: booking.phone }, [booking], now);
+  assert.equal(result.booking.status, 'cancelled');
+  const after = availability(booking.date, result.bookings, now);
+  assert.equal(after.slots['18:00'], 20);
+  assert.equal(after.lambRemaining, 10);
+  assert.throws(() => cancelBooking({ code: booking.code, phone: booking.phone }, result.bookings, now), (error) => error.status === 409);
+});
+
+test('cannot cancel after dining time begins', () => {
+  const booking = createBooking(bookingInput, [], now);
+  assert.throws(() => cancelBooking({ code: booking.code, phone: booking.phone }, [booking], new Date(2026, 10, 6, 18, 0)), (error) => error.status === 409);
 });
