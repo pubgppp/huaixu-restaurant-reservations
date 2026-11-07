@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { availability, cancelBooking, createBooking, dateRange, findBooking, isBookableDate, BookingError } from '../booking.js';
+import { availability, canCancelBooking, cancelBooking, createBooking, dateRange, findBooking, isBookableDate, BookingError } from '../booking.js';
 
 const now = new Date(2026, 10, 5, 9, 0);
 const bookingInput = { date: '2026-11-06', time: '18:00', partySize: 2, lambQty: 1, name: '李女士', phone: '138 0011 2233', note: '' };
@@ -55,5 +55,7 @@ test('cancellation releases both seats and daily lamb stock', () => {
 
 test('cannot cancel after dining time begins', () => {
   const booking = createBooking(bookingInput, [], now);
+  assert.equal(canCancelBooking(booking, new Date(2026, 10, 6, 17, 59)), true);
+  assert.equal(canCancelBooking(booking, new Date(2026, 10, 6, 18, 0)), false);
   assert.throws(() => cancelBooking({ code: booking.code, phone: booking.phone }, [booking], new Date(2026, 10, 6, 18, 0)), (error) => error.status === 409);
 });

@@ -2,7 +2,7 @@ import http from 'node:http';
 import { readFileSync, writeFileSync, mkdirSync, renameSync, existsSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { availability, BookingError, createBooking, dateRange, DAILY_LAMB_LIMIT, TIMES, SLOT_SEAT_LIMIT } from './booking.js';
+import { availability, BookingError, canCancelBooking, cancelBooking, createBooking, dateRange, findBooking, DAILY_LAMB_LIMIT, TIMES, SLOT_SEAT_LIMIT } from './booking.js';
 
 const root = dirname(fileURLToPath(import.meta.url));
 const dataFile = process.env.DATA_FILE || join(root, 'data', 'reservations.json');
@@ -26,6 +26,18 @@ function saveBookings(bookings) {
 function json(res, status, body) {
   res.writeHead(status, { 'Content-Type': 'application/json; charset=utf-8', 'Cache-Control': 'no-store', 'X-Content-Type-Options': 'nosniff' });
   res.end(JSON.stringify(body));
+}
+
+function publicBooking(booking) {
+  return {
+    code: booking.code,
+    date: booking.date,
+    time: booking.time,
+    partySize: booking.partySize,
+    lambQty: booking.lambQty,
+    status: booking.status || 'confirmed',
+    canCancel: canCancelBooking(booking)
+  };
 }
 
 async function readJson(req) {
@@ -60,6 +72,16 @@ const server = http.createServer(async (req, res) => {
       const booking = createBooking(input, bookings);
       saveBookings([...bookings, booking]);
       return json(res, 201, { code: booking.code, date: booking.date, time: booking.time, partySize: booking.partySize, lambQty: booking.lambQty });
+    }
+    if (req.method === 'POST' && url.pathname === '/api/reservations/lookup') {
+      const input = await readJson(req);
+      return json(res, 200, publicBooking(findBooking(input, readBookings())));
+    }
+    if (req.method === 'POST' && url.pathname === '/api/reservations/cancel') {
+      const input = await readJson(req);
+      const result = cancelBooking(input, readBookings());
+      saveBookings(result.bookings);
+      return json(res, 200, publicBooking(result.booking));
     }
     if (req.method === 'GET' && staticFiles.has(url.pathname)) {
       const [filename, contentType] = staticFiles.get(url.pathname);

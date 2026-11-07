@@ -83,14 +83,17 @@ export function findBooking(input, bookings) {
   return booking;
 }
 
+export function canCancelBooking(booking, now = new Date()) {
+  if (booking.status === 'cancelled') return false;
+  const today = localDate(now);
+  const currentTime = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
+  return booking.date > today || (booking.date === today && booking.time > currentTime);
+}
+
 export function cancelBooking(input, bookings, now = new Date()) {
   const booking = findBooking(input, bookings);
   if (booking.status === 'cancelled') throw new BookingError('这笔预约已经取消。', 409);
-  const today = localDate(now);
-  const currentTime = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
-  if (booking.date < today || (booking.date === today && booking.time <= currentTime)) {
-    throw new BookingError('到店时间已到，无法在线取消。', 409);
-  }
+  if (!canCancelBooking(booking, now)) throw new BookingError('到店时间已到，无法在线取消。', 409);
   const cancelled = { ...booking, status: 'cancelled', cancelledAt: now.toISOString() };
   return {
     booking: cancelled,
