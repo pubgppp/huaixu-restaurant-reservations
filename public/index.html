@@ -18,6 +18,7 @@
       <nav aria-label="主导航">
         <a href="#story">关于小馆</a>
         <a href="#signature">招牌菜</a>
+        <a href="#manage-booking">管理预约</a>
         <a class="nav-book" href="#booking">立即订座 <span aria-hidden="true">↗</span></a>
       </nav>
     </header>
@@ -80,9 +81,37 @@
           <aside class="booking-aside" aria-label="预约说明"><div class="aside-icon">✳</div><h3>好位置，<br />留给好时光。</h3><p>午市与晚市开放预约。每个时段最多接待 20 位客人；每日手抓羊排共 10 份，先订先得。</p><div class="aside-divider"></div><dl><div><dt>午市</dt><dd>11:30—14:00</dd></div><div><dt>晚市</dt><dd>17:30—21:00</dd></div><div><dt>预约范围</dt><dd>未来 30 天</dd></div></dl></aside>
         </div>
       </section>
+
+      <section id="manage-booking" class="manage-booking" aria-labelledby="manage-title">
+        <div class="section-wrap manage-inner">
+          <div class="manage-copy">
+            <span class="section-number">04 / MANAGE BOOKING</span>
+            <h2 id="manage-title">计划有变，<br /><em>也可以从容安排。</em></h2>
+            <p>输入预约编号和预留的联系电话，即可查看预约详情。到店时间前可以在线取消，座位和限量菜品会重新开放预订。</p>
+          </div>
+          <div class="manage-panel">
+            <form id="lookup-form" novalidate>
+              <div class="field"><label for="lookup-code">预约编号</label><input id="lookup-code" name="code" autocomplete="off" placeholder="例如 HX-20261107-…" required /></div>
+              <div class="field"><label for="lookup-phone">预留联系电话</label><input id="lookup-phone" name="phone" type="tel" autocomplete="tel" placeholder="预约时填写的号码" required /></div>
+              <p id="lookup-message" class="form-message" role="alert" hidden></p>
+              <button id="lookup-button" class="button button-dark" type="submit">查看我的预约 <span aria-hidden="true">↗</span></button>
+            </form>
+            <div id="lookup-result" class="lookup-result" aria-live="polite" hidden>
+              <div class="lookup-result-head"><strong>预约详情</strong><span id="lookup-status"></span></div>
+              <dl>
+                <div><dt>预约编号</dt><dd id="result-code"></dd></div>
+                <div><dt>到店时间</dt><dd id="result-datetime"></dd></div>
+                <div><dt>用餐人数</dt><dd id="result-party"></dd></div>
+                <div><dt>手抓羊排</dt><dd id="result-lamb"></dd></div>
+              </dl>
+              <button id="cancel-button" class="cancel-button" type="button" hidden>取消这笔预约</button>
+            </div>
+          </div>
+        </div>
+      </section>
     </main>
 
-    <div id="confirmation" class="dialog-backdrop" hidden><div class="confirmation-card" role="dialog" aria-modal="true" aria-labelledby="confirmation-title"><button id="close-dialog" class="close-dialog" type="button" aria-label="关闭确认信息">×</button><span class="confirmation-icon">✓</span><p class="eyebrow dark">RESERVATION CONFIRMED</p><h2 id="confirmation-title">这一席，为您留好了。</h2><p id="confirmation-summary"></p><p id="confirmation-code" class="confirmation-code"></p><button id="done-button" class="button button-dark" type="button">好的，期待见面</button></div></div>
+    <div id="confirmation" class="dialog-backdrop" hidden><div class="confirmation-card" role="dialog" aria-modal="true" aria-labelledby="confirmation-title"><button id="close-dialog" class="close-dialog" type="button" aria-label="关闭确认信息">×</button><span class="confirmation-icon">✓</span><p class="eyebrow dark">RESERVATION CONFIRMED</p><h2 id="confirmation-title">这一席，为您留好了。</h2><p id="confirmation-summary"></p><p id="confirmation-code" class="confirmation-code"></p><button id="done-button" class="button button-dark" type="button">好的，期待见面</button><a id="manage-link" class="manage-dialog-link" href="#manage-booking">查看或取消预约 →</a></div></div>
 
     <footer class="site-footer"><div class="footer-brand">槐序小馆 <span>HUAI XU · DINING</span></div><p>一餐一会，慢享此刻。<br />本网站为餐厅预约演示项目，非真实营业餐厅。</p><a href="#top">返回顶部 ↑</a></footer>
   </body>
