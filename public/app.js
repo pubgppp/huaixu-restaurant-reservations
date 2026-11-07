@@ -10,9 +10,19 @@ const submitButton = document.querySelector('#submit-button');
 const dialog = document.querySelector('#confirmation');
 const closeButton = document.querySelector('#close-dialog');
 const doneButton = document.querySelector('#done-button');
+const manageLink = document.querySelector('#manage-link');
+const lookupForm = document.querySelector('#lookup-form');
+const lookupCode = document.querySelector('#lookup-code');
+const lookupPhone = document.querySelector('#lookup-phone');
+const lookupButton = document.querySelector('#lookup-button');
+const lookupMessage = document.querySelector('#lookup-message');
+const lookupResult = document.querySelector('#lookup-result');
+const cancelButton = document.querySelector('#cancel-button');
 let config;
 let stock;
 let requestNumber = 0;
+let currentBooking;
+let verifiedPhone;
 
 async function api(path, options) {
   const response = await fetch(path, options);
@@ -24,6 +34,25 @@ async function api(path, options) {
 function showMessage(text) {
   message.textContent = text;
   message.hidden = !text;
+}
+
+function showLookupMessage(text, success = false) {
+  lookupMessage.textContent = text;
+  lookupMessage.hidden = !text;
+  lookupMessage.classList.toggle('success', success);
+}
+
+function renderBooking(booking) {
+  currentBooking = booking;
+  document.querySelector('#result-code').textContent = booking.code;
+  document.querySelector('#result-datetime').textContent = `${booking.date} ${booking.time}`;
+  document.querySelector('#result-party').textContent = `${booking.partySize} 人`;
+  document.querySelector('#result-lamb').textContent = booking.lambQty ? `${booking.lambQty} 份` : '未预留';
+  const status = document.querySelector('#lookup-status');
+  status.textContent = booking.status === 'cancelled' ? '已取消' : '已确认';
+  status.classList.toggle('cancelled', booking.status === 'cancelled');
+  cancelButton.hidden = !booking.canCancel;
+  lookupResult.hidden = false;
 }
 
 function renderAvailability() {
@@ -77,6 +106,7 @@ dateInput.addEventListener('change', loadAvailability);
 partyInput.addEventListener('change', renderAvailability);
 closeButton.addEventListener('click', closeDialog);
 doneButton.addEventListener('click', closeDialog);
+manageLink.addEventListener('click', closeDialog);
 dialog.addEventListener('click', (event) => { if (event.target === dialog) closeDialog(); });
 document.addEventListener('keydown', (event) => { if (event.key === 'Escape' && !dialog.hidden) closeDialog(); });
 
@@ -98,6 +128,8 @@ form.addEventListener('submit', async (event) => {
     });
     document.querySelector('#confirmation-summary').textContent = `${result.date} ${result.time} · ${result.partySize} 位${result.lambQty ? ` · 手抓羊排 ${result.lambQty} 份` : ''}`;
     document.querySelector('#confirmation-code').textContent = `预约编号：${result.code}`;
+    lookupCode.value = result.code;
+    lookupPhone.value = input.phone;
     dialog.hidden = false;
     document.body.style.overflow = 'hidden';
     closeButton.focus();
@@ -110,6 +142,54 @@ form.addEventListener('submit', async (event) => {
   } finally {
     submitButton.disabled = false;
     submitButton.firstChild.textContent = '确认预约 ';
+  }
+});
+
+lookupForm.addEventListener('submit', async (event) => {
+  event.preventDefault();
+  showLookupMessage('');
+  lookupResult.hidden = true;
+  currentBooking = null;
+  verifiedPhone = null;
+  const input = Object.fromEntries(new FormData(lookupForm));
+  if (!input.code?.trim() || !input.phone?.trim()) {
+    showLookupMessage('请填写预约编号和预留的联系电话。');
+    return;
+  }
+  lookupButton.disabled = true;
+  try {
+    const booking = await api('/api/reservations/lookup', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(input)
+    });
+    verifiedPhone = input.phone;
+    renderBooking(booking);
+  } catch (error) {
+    showLookupMessage(error.message);
+  } finally {
+    lookupButton.disabled = false;
+  }
+});
+
+cancelButton.addEventListener('click', async () => {
+  if (!currentBooking?.canCancel) return;
+  if (!window.confirm('确定取消这笔预约吗？取消后，座位和预留菜品会重新开放。')) return;
+  cancelButton.disabled = true;
+  showLookupMessage('');
+  try {
+    const booking = await api('/api/reservations/cancel', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ code: currentBooking.code, phone: verifiedPhone })
+    });
+    renderBooking(booking);
+    showLookupMessage('预约已取消，座位和限量菜品余量已恢复。', true);
+    if (dateInput.value === booking.date) await loadAvailability();
+  } catch (error) {
+    showLookupMessage(error.message);
+  } finally {
+    cancelButton.disabled = false;
   }
 });
 
