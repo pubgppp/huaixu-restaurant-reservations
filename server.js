@@ -50,12 +50,17 @@ const staticFiles = new Map([
   ['/styles.css', ['styles.css', 'text/css; charset=utf-8']],
   ['/app.js', ['app.js', 'text/javascript; charset=utf-8']],
   ['/staff.js', ['staff.js', 'text/javascript; charset=utf-8']],
-  ['/staff.css', ['staff.css', 'text/css; charset=utf-8']]
+  ['/staff.css', ['staff.css', 'text/css; charset=utf-8']],
+  ['/favicon.svg', ['favicon.svg', 'image/svg+xml']]
 ]);
 
 const server = http.createServer(async (req, res) => {
   try {
     const url = new URL(req.url, `http://${req.headers.host || 'localhost'}`);
+    if (req.method === 'GET' && url.pathname === '/api/health') {
+      readBookings(dataFile);
+      return json(res, 200, { status: 'ok', timeZone: RESTAURANT_TIME_ZONE });
+    }
     if (req.method === 'GET' && url.pathname === '/api/config') {
       return json(res, 200, { ...dateRange(), times: TIMES, dailyLambLimit: DAILY_LAMB_LIMIT, slotSeatLimit: SLOT_SEAT_LIMIT, timeZone: RESTAURANT_TIME_ZONE });
     }
@@ -108,4 +113,4 @@ const server = http.createServer(async (req, res) => {
   }
 });
 
-server.listen(port, host, () => console.log(`槐序小馆运行中：http://${host}:${port}`));
+server.listen(port, host, () => console.log(`槐序小馆运行中：http://${host}:${server.address().port}`));
