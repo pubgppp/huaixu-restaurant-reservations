@@ -6,6 +6,7 @@ import { availability, BookingError, canCancelBooking, cancelBooking, createBook
 import { isStaffAuthorized, isStaffKeyConfigured } from './staff-auth.js';
 import { createRateLimiter } from './rate-limit.js';
 import { readBookings, saveBookings } from './storage.js';
+import { readJson, securityHeaders } from './http-utils.js';
 
 const root = dirname(fileURLToPath(import.meta.url));
 const dataFile = process.env.DATA_FILE || join(root, 'data', 'reservations.json');
@@ -16,7 +17,7 @@ const customerLookupLimit = createRateLimiter({ maxAttempts: 10, windowMs: 10 * 
 const reservationLimit = createRateLimiter({ maxAttempts: 20, windowMs: 10 * 60 * 1000 });
 
 function json(res, status, body) {
-  res.writeHead(status, { 'Content-Type': 'application/json; charset=utf-8', 'Cache-Control': 'no-store', 'X-Content-Type-Options': 'nosniff' });
+  res.writeHead(status, { ...securityHeaders, 'Content-Type': 'application/json; charset=utf-8', 'Cache-Control': 'no-store' });
   res.end(JSON.stringify(body));
 }
 
@@ -41,15 +42,6 @@ function requireRateLimit(req, limiter) {
   if (!limiter.consume(req.socket.remoteAddress || 'unknown')) {
     throw new BookingError('操作过于频繁，请稍后再试。', 429);
   }
-}
-
-async function readJson(req) {
-  let raw = '';
-  for await (const chunk of req) {
-    raw += chunk;
-    if (raw.length > 16_384) throw new BookingError('请求内容过长。', 413);
-  }
-  try { return JSON.parse(raw); } catch { throw new BookingError('请求格式无效。'); }
 }
 
 const staticFiles = new Map([
@@ -105,7 +97,7 @@ const server = http.createServer(async (req, res) => {
     }
     if (req.method === 'GET' && staticFiles.has(url.pathname)) {
       const [filename, contentType] = staticFiles.get(url.pathname);
-      res.writeHead(200, { 'Content-Type': contentType, 'X-Content-Type-Options': 'nosniff' });
+      res.writeHead(200, { ...securityHeaders, 'Content-Type': contentType });
       return res.end(readFileSync(join(root, 'public', filename)));
     }
     return json(res, 404, { error: '页面不存在。' });
