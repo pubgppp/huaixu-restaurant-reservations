@@ -1,0 +1,36 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="theme-color" content="#18372e" />
+    <meta name="robots" content="noindex,nofollow" />
+    <title>店员工作台 · 槐序小馆</title>
+    <link rel="stylesheet" href="/styles.css" />
+    <link rel="stylesheet" href="/staff.css" />
+  </head>
+  <body>
+    <header class="site-header">
+      <a class="brand" href="/" aria-label="槐序小馆，返回首页"><span class="brand-mark" aria-hidden="true">槐</span><span><strong>槐序小馆</strong><small>HUAI XU · DINING</small></span></a>
+      <nav aria-label="店员导航"><a href="/">← 返回顾客页面</a></nav>
+    </header>
+    <main class="staff-main">
+      <section class="staff-hero section-wrap" aria-labelledby="staff-title"><span class="section-number">STAFF / WORKSPACE</span><h1 id="staff-title">店员工作台<span>✳</span></h1><p>查看每日预约，掌握用餐人数与限量菜品预留情况。</p></section>
+      <div class="section-wrap staff-content">
+        <form id="staff-form" class="staff-form" novalidate>
+          <div class="field"><label for="staff-key">店员密钥</label><input id="staff-key" name="key" type="password" autocomplete="off" placeholder="请输入服务器配置的密钥" required /><small>密钥仅保留在当前页面内存中，刷新页面后需重新输入。</small></div>
+          <div class="field"><label for="staff-date">查询日期</label><input id="staff-date" name="date" type="date" required /></div>
+          <button id="staff-load" class="button button-dark" type="submit">查看预约 <span aria-hidden="true">↗</span></button>
+        </form>
+        <p id="staff-message" class="staff-message" role="alert" hidden></p>
+        <section id="staff-results" class="staff-results" aria-labelledby="results-title" hidden>
+          <div class="staff-results-heading"><div><span class="section-number">DAILY OVERVIEW</span><h2 id="results-title">当日预约</h2></div><p id="results-date"></p></div>
+          <div class="staff-stats" aria-label="当日汇总"><div><span>有效预约</span><strong id="stat-bookings">0</strong></div><div><span>预订座位</span><strong id="stat-seats">0</strong></div><div><span>羊排预留</span><strong id="stat-lamb">0</strong></div></div>
+          <div id="staff-list" class="staff-list"></div>
+          <p id="staff-empty" class="staff-empty" hidden>这一天还没有预约。</p>
+        </section>
+      </div>
+    </main>
+    <footer class="site-footer"><div class="footer-brand">槐序小馆 <span>HUAI XU · DINING</span></div><p>店员工作台仅供演示使用。<br />请妥善保管店员密钥与顾客联系信息。</p><a href="/">返回首页 ↑</a></footer>
+  </body>
+</html>
