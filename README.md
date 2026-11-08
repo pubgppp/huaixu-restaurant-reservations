@@ -36,6 +36,8 @@ npm start
 
 预约信息保存在运行本服务的电脑上，包含姓名和电话；`data/reservations.json` 已加入 `.gitignore`。预约查询与取消需要编号和预留手机号，接口按来源 IP 限制请求频率。请勿把它直接当作正式营业系统：公开上线前需要完善身份验证、分布式限流、隐私保护、备份、跨进程并发控制和通知流程。
 
+运行 `npm run backup` 可将当前预约数据复制到 `data/backups/`。备份含顾客联系方式，需妥善保管；可用 `BACKUP_DIR` 指定备份位置。恢复时先停止服务，再将选定备份复制回 `DATA_FILE` 指向的文件。
+
 默认仅监听本机 `127.0.0.1:3000`。可通过 `PORT`、`HOST` 和 `DATA_FILE` 环境变量调整。
 预约日期按 `RESTAURANT_TIME_ZONE` 计算，默认 `Australia/Sydney`；部署到其他地区时请设为餐厅所在地的 IANA 时区。
 
