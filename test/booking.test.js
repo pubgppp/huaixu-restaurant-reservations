@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { availability, canCancelBooking, cancelBooking, createBooking, dateRange, findBooking, isBookableDate, BookingError } from '../booking.js';
+import { availability, canCancelBooking, cancelBooking, createBooking, dateRange, findBooking, isBookableDate, listBookingsForDate, markArrived, BookingError } from '../booking.js';
 
 const now = new Date(2026, 10, 5, 9, 0);
 const bookingInput = { date: '2026-11-06', time: '18:00', partySize: 2, lambQty: 1, name: '李女士', phone: '138 0011 2233', note: '' };
@@ -58,4 +58,16 @@ test('cannot cancel after dining time begins', () => {
   assert.equal(canCancelBooking(booking, new Date(2026, 10, 6, 17, 59)), true);
   assert.equal(canCancelBooking(booking, new Date(2026, 10, 6, 18, 0)), false);
   assert.throws(() => cancelBooking({ code: booking.code, phone: booking.phone }, [booking], new Date(2026, 10, 6, 18, 0)), (error) => error.status === 409);
+});
+
+test('staff can list a day and mark only today’s active reservation arrived', () => {
+  const booking = createBooking(bookingInput, [], now);
+  const later = createBooking({ ...bookingInput, time: '19:00', lambQty: 0 }, [], now);
+  assert.deepEqual(listBookingsForDate('2026-11-06', [later, booking]).map((item) => item.time), ['18:00', '19:00']);
+  assert.throws(() => listBookingsForDate('2026-11-31', [booking]), BookingError);
+  assert.throws(() => markArrived(booking.code, [booking], now), (error) => error.status === 409);
+  const result = markArrived(booking.code, [booking], new Date(2026, 10, 6, 17, 45));
+  assert.equal(result.booking.status, 'arrived');
+  assert.equal(canCancelBooking(result.booking, new Date(2026, 10, 6, 17, 46)), false);
+  assert.equal(availability('2026-11-06', result.bookings, new Date(2026, 10, 6, 17, 46)).lambRemaining, 9);
 });

@@ -84,10 +84,35 @@ export function findBooking(input, bookings) {
 }
 
 export function canCancelBooking(booking, now = new Date()) {
-  if (booking.status === 'cancelled') return false;
+  if (booking.status && booking.status !== 'confirmed') return false;
   const today = localDate(now);
   const currentTime = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
   return booking.date > today || (booking.date === today && booking.time > currentTime);
+}
+
+export function listBookingsForDate(date, bookings) {
+  if (typeof date !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(date)) {
+    throw new BookingError('请选择有效的查询日期。');
+  }
+  const [year, month, day] = date.split('-').map(Number);
+  if (localDate(new Date(year, month - 1, day)) !== date) {
+    throw new BookingError('请选择有效的查询日期。');
+  }
+  return bookings.filter((item) => item.date === date).sort((a, b) => a.time.localeCompare(b.time));
+}
+
+export function markArrived(code, bookings, now = new Date()) {
+  const normalized = typeof code === 'string' ? code.trim().toUpperCase() : '';
+  const booking = bookings.find((item) => item.code === normalized);
+  if (!booking) throw new BookingError('没有找到这笔预约。', 404);
+  if (booking.status === 'cancelled') throw new BookingError('已取消的预约不能标记到店。', 409);
+  if (booking.status === 'arrived') throw new BookingError('这笔预约已标记到店。', 409);
+  if (booking.date !== localDate(now)) throw new BookingError('只能标记今天的预约到店。', 409);
+  const arrived = { ...booking, status: 'arrived', arrivedAt: now.toISOString() };
+  return {
+    booking: arrived,
+    bookings: bookings.map((item) => item.id === booking.id ? arrived : item)
+  };
 }
 
 export function cancelBooking(input, bookings, now = new Date()) {
