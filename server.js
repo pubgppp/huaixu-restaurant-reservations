@@ -2,12 +2,14 @@ import http from 'node:http';
 import { readFileSync, writeFileSync, mkdirSync, renameSync, existsSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { availability, BookingError, canCancelBooking, cancelBooking, createBooking, dateRange, findBooking, DAILY_LAMB_LIMIT, TIMES, SLOT_SEAT_LIMIT } from './booking.js';
+import { availability, BookingError, canCancelBooking, cancelBooking, createBooking, dateRange, findBooking, listBookingsForDate, markArrived, DAILY_LAMB_LIMIT, TIMES, SLOT_SEAT_LIMIT } from './booking.js';
+import { isStaffAuthorized, isStaffKeyConfigured } from './staff-auth.js';
 
 const root = dirname(fileURLToPath(import.meta.url));
 const dataFile = process.env.DATA_FILE || join(root, 'data', 'reservations.json');
 const port = Number(process.env.PORT || 3000);
 const host = process.env.HOST || '127.0.0.1';
+const staffKey = process.env.STAFF_KEY;
 
 function readBookings() {
   if (!existsSync(dataFile)) return [];
@@ -38,6 +40,11 @@ function publicBooking(booking) {
     status: booking.status || 'confirmed',
     canCancel: canCancelBooking(booking)
   };
+}
+
+function requireStaff(req) {
+  if (!isStaffKeyConfigured(staffKey)) throw new BookingError('店员后台尚未配置。', 503);
+  if (!isStaffAuthorized(staffKey, req.headers['x-staff-key'])) throw new BookingError('店员密钥不正确。', 401);
 }
 
 async function readJson(req) {
@@ -82,6 +89,17 @@ const server = http.createServer(async (req, res) => {
       const result = cancelBooking(input, readBookings());
       saveBookings(result.bookings);
       return json(res, 200, publicBooking(result.booking));
+    }
+    if (req.method === 'GET' && url.pathname === '/api/staff/bookings') {
+      requireStaff(req);
+      return json(res, 200, { bookings: listBookingsForDate(url.searchParams.get('date'), readBookings()) });
+    }
+    if (req.method === 'POST' && url.pathname === '/api/staff/arrive') {
+      requireStaff(req);
+      const input = await readJson(req);
+      const result = markArrived(input?.code, readBookings());
+      saveBookings(result.bookings);
+      return json(res, 200, { booking: result.booking });
     }
     if (req.method === 'GET' && staticFiles.has(url.pathname)) {
       const [filename, contentType] = staticFiles.get(url.pathname);
