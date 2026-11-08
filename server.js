@@ -4,12 +4,15 @@ import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { availability, BookingError, canCancelBooking, cancelBooking, createBooking, dateRange, findBooking, listBookingsForDate, markArrived, DAILY_LAMB_LIMIT, RESTAURANT_TIME_ZONE, TIMES, SLOT_SEAT_LIMIT } from './booking.js';
 import { isStaffAuthorized, isStaffKeyConfigured } from './staff-auth.js';
+import { createRateLimiter } from './rate-limit.js';
 
 const root = dirname(fileURLToPath(import.meta.url));
 const dataFile = process.env.DATA_FILE || join(root, 'data', 'reservations.json');
 const port = Number(process.env.PORT || 3000);
 const host = process.env.HOST || '127.0.0.1';
 const staffKey = process.env.STAFF_KEY;
+const customerLookupLimit = createRateLimiter({ maxAttempts: 10, windowMs: 10 * 60 * 1000 });
+const reservationLimit = createRateLimiter({ maxAttempts: 20, windowMs: 10 * 60 * 1000 });
 
 function readBookings() {
   if (!existsSync(dataFile)) return [];
@@ -47,6 +50,12 @@ function requireStaff(req) {
   if (!isStaffAuthorized(staffKey, req.headers['x-staff-key'])) throw new BookingError('店员密钥不正确。', 401);
 }
 
+function requireRateLimit(req, limiter) {
+  if (!limiter.consume(req.socket.remoteAddress || 'unknown')) {
+    throw new BookingError('操作过于频繁，请稍后再试。', 429);
+  }
+}
+
 async function readJson(req) {
   let raw = '';
   for await (const chunk of req) {
@@ -75,6 +84,7 @@ const server = http.createServer(async (req, res) => {
       return json(res, 200, availability(url.searchParams.get('date'), readBookings()));
     }
     if (req.method === 'POST' && url.pathname === '/api/reservations') {
+      requireRateLimit(req, reservationLimit);
       const input = await readJson(req);
       // The check and write run synchronously in one event loop turn, so simultaneous
       // requests handled by this server cannot spend the same remaining stock.
@@ -84,10 +94,12 @@ const server = http.createServer(async (req, res) => {
       return json(res, 201, { code: booking.code, date: booking.date, time: booking.time, partySize: booking.partySize, lambQty: booking.lambQty });
     }
     if (req.method === 'POST' && url.pathname === '/api/reservations/lookup') {
+      requireRateLimit(req, customerLookupLimit);
       const input = await readJson(req);
       return json(res, 200, publicBooking(findBooking(input, readBookings())));
     }
     if (req.method === 'POST' && url.pathname === '/api/reservations/cancel') {
+      requireRateLimit(req, customerLookupLimit);
       const input = await readJson(req);
       const result = cancelBooking(input, readBookings());
       saveBookings(result.bookings);
