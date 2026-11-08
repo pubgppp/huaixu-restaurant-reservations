@@ -3,6 +3,7 @@ import { randomUUID } from 'node:crypto';
 export const TIMES = ['11:30', '12:00', '12:30', '13:00', '17:30', '18:00', '18:30', '19:00', '19:30', '20:00'];
 export const DAILY_LAMB_LIMIT = 10;
 export const SLOT_SEAT_LIMIT = 20;
+export const RESTAURANT_TIME_ZONE = process.env.RESTAURANT_TIME_ZONE || 'Australia/Sydney';
 
 export class BookingError extends Error {
   constructor(message, status = 400) {
@@ -15,9 +16,20 @@ function localDate(date) {
   return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
 }
 
+export function restaurantDateTime(now = new Date(), timeZone = RESTAURANT_TIME_ZONE) {
+  const parts = Object.fromEntries(new Intl.DateTimeFormat('en-GB', {
+    timeZone, year: 'numeric', month: '2-digit', day: '2-digit',
+    hour: '2-digit', minute: '2-digit', hourCycle: 'h23'
+  }).formatToParts(now).map(({ type, value }) => [type, value]));
+  return { date: `${parts.year}-${parts.month}-${parts.day}`, time: `${parts.hour}:${parts.minute}` };
+}
+
 export function dateRange(now = new Date()) {
-  const last = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 30);
-  return { min: localDate(now), max: localDate(last) };
+  const min = restaurantDateTime(now).date;
+  const [year, month, day] = min.split('-').map(Number);
+  const last = new Date(Date.UTC(year, month - 1, day + 30));
+  const max = `${last.getUTCFullYear()}-${String(last.getUTCMonth() + 1).padStart(2, '0')}-${String(last.getUTCDate()).padStart(2, '0')}`;
+  return { min, max };
 }
 
 export function isBookableDate(value, now = new Date()) {
@@ -35,7 +47,8 @@ export function availability(date, bookings, now = new Date()) {
   const lambRemaining = Math.max(0, DAILY_LAMB_LIMIT - dayBookings.reduce((sum, item) => sum + item.lambQty, 0));
   const slots = Object.fromEntries(TIMES.map((time) => {
     const used = dayBookings.filter((item) => item.time === time).reduce((sum, item) => sum + item.partySize, 0);
-    const hasPassed = `${date}T${time}:00` <= `${localDate(now)}T${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}:00`;
+    const current = restaurantDateTime(now);
+    const hasPassed = date < current.date || (date === current.date && time <= current.time);
     return [time, hasPassed ? 0 : Math.max(0, SLOT_SEAT_LIMIT - used)];
   }));
   return { date, lambRemaining, slots };
@@ -85,9 +98,8 @@ export function findBooking(input, bookings) {
 
 export function canCancelBooking(booking, now = new Date()) {
   if (booking.status && booking.status !== 'confirmed') return false;
-  const today = localDate(now);
-  const currentTime = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
-  return booking.date > today || (booking.date === today && booking.time > currentTime);
+  const current = restaurantDateTime(now);
+  return booking.date > current.date || (booking.date === current.date && booking.time > current.time);
 }
 
 export function listBookingsForDate(date, bookings) {
@@ -107,7 +119,7 @@ export function markArrived(code, bookings, now = new Date()) {
   if (!booking) throw new BookingError('没有找到这笔预约。', 404);
   if (booking.status === 'cancelled') throw new BookingError('已取消的预约不能标记到店。', 409);
   if (booking.status === 'arrived') throw new BookingError('这笔预约已标记到店。', 409);
-  if (booking.date !== localDate(now)) throw new BookingError('只能标记今天的预约到店。', 409);
+  if (booking.date !== restaurantDateTime(now).date) throw new BookingError('只能标记今天的预约到店。', 409);
   const arrived = { ...booking, status: 'arrived', arrivedAt: now.toISOString() };
   return {
     booking: arrived,

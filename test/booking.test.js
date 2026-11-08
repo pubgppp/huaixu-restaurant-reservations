@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { availability, canCancelBooking, cancelBooking, createBooking, dateRange, findBooking, isBookableDate, listBookingsForDate, markArrived, BookingError } from '../booking.js';
+import { availability, canCancelBooking, cancelBooking, createBooking, dateRange, findBooking, isBookableDate, listBookingsForDate, markArrived, restaurantDateTime, BookingError } from '../booking.js';
 
 const now = new Date(2026, 10, 5, 9, 0);
 const bookingInput = { date: '2026-11-06', time: '18:00', partySize: 2, lambQty: 1, name: '李女士', phone: '138 0011 2233', note: '' };
@@ -9,6 +9,13 @@ test('date range is 30 calendar days and rejects impossible dates', () => {
   assert.deepEqual(dateRange(now), { min: '2026-11-05', max: '2026-12-05' });
   assert.equal(isBookableDate('2026-11-31', now), false);
   assert.equal(isBookableDate('2026-12-06', now), false);
+});
+
+test('restaurant calendar follows its configured zone across UTC midnight', () => {
+  const instant = new Date('2026-11-05T14:30:00Z');
+  assert.deepEqual(restaurantDateTime(instant, 'Australia/Sydney'), { date: '2026-11-06', time: '01:30' });
+  assert.deepEqual(restaurantDateTime(instant, 'Asia/Shanghai'), { date: '2026-11-05', time: '22:30' });
+  assert.deepEqual(dateRange(instant), { min: '2026-11-06', max: '2026-12-06' });
 });
 
 test('daily lamb stock is shared across meal times', () => {

@@ -37,6 +37,7 @@ npm start
 预约信息保存在运行本服务的电脑上，包含姓名和电话；`data/reservations.json` 已加入 `.gitignore`。预约查询与取消需要编号和预留手机号。请勿把它直接当作正式营业系统：公开上线前需要完善身份验证、请求频率限制、隐私保护、备份、跨进程并发控制和通知流程。
 
 默认仅监听本机 `127.0.0.1:3000`。可通过 `PORT`、`HOST` 和 `DATA_FILE` 环境变量调整。
+预约日期按 `RESTAURANT_TIME_ZONE` 计算，默认 `Australia/Sydney`；部署到其他地区时请设为餐厅所在地的 IANA 时区。
 
 ## Git 进度
 

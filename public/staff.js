@@ -7,6 +7,7 @@ const results = document.querySelector('#staff-results');
 const list = document.querySelector('#staff-list');
 const empty = document.querySelector('#staff-empty');
 let staffKey = '';
+let restaurantToday = '';
 
 function localDate() {
   const now = new Date();
@@ -42,7 +43,7 @@ function renderCard(booking) {
   const side = element('div', 'staff-card-side');
   const label = booking.status === 'cancelled' ? '已取消' : booking.status === 'arrived' ? '已到店' : '已确认';
   side.append(element('span', 'staff-status', label));
-  if (booking.status !== 'cancelled' && booking.status !== 'arrived' && booking.date === localDate()) {
+  if (booking.status !== 'cancelled' && booking.status !== 'arrived' && booking.date === restaurantToday) {
     const button = element('button', 'arrive-button', '标记到店');
     button.type = 'button';
     button.addEventListener('click', async () => {
@@ -102,3 +103,12 @@ form.addEventListener('submit', async (event) => {
 });
 
 dateInput.value = localDate();
+try {
+  const response = await fetch('/api/config');
+  if (!response.ok) throw new Error('无法获取餐厅日期。');
+  const config = await response.json();
+  restaurantToday = config.min;
+  dateInput.value = restaurantToday;
+} catch (error) {
+  showMessage(error.message);
+}

@@ -2,7 +2,7 @@ import http from 'node:http';
 import { readFileSync, writeFileSync, mkdirSync, renameSync, existsSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { availability, BookingError, canCancelBooking, cancelBooking, createBooking, dateRange, findBooking, listBookingsForDate, markArrived, DAILY_LAMB_LIMIT, TIMES, SLOT_SEAT_LIMIT } from './booking.js';
+import { availability, BookingError, canCancelBooking, cancelBooking, createBooking, dateRange, findBooking, listBookingsForDate, markArrived, DAILY_LAMB_LIMIT, RESTAURANT_TIME_ZONE, TIMES, SLOT_SEAT_LIMIT } from './booking.js';
 import { isStaffAuthorized, isStaffKeyConfigured } from './staff-auth.js';
 
 const root = dirname(fileURLToPath(import.meta.url));
@@ -69,7 +69,7 @@ const server = http.createServer(async (req, res) => {
   try {
     const url = new URL(req.url, `http://${req.headers.host || 'localhost'}`);
     if (req.method === 'GET' && url.pathname === '/api/config') {
-      return json(res, 200, { ...dateRange(), times: TIMES, dailyLambLimit: DAILY_LAMB_LIMIT, slotSeatLimit: SLOT_SEAT_LIMIT });
+      return json(res, 200, { ...dateRange(), times: TIMES, dailyLambLimit: DAILY_LAMB_LIMIT, slotSeatLimit: SLOT_SEAT_LIMIT, timeZone: RESTAURANT_TIME_ZONE });
     }
     if (req.method === 'GET' && url.pathname === '/api/availability') {
       return json(res, 200, availability(url.searchParams.get('date'), readBookings()));
