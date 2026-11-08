@@ -23,6 +23,7 @@ let stock;
 let requestNumber = 0;
 let currentBooking;
 let verifiedPhone;
+let focusBeforeDialog;
 
 async function api(path, options) {
   const response = await fetch(path, options);
@@ -31,15 +32,27 @@ async function api(path, options) {
   return body;
 }
 
-function showMessage(text) {
+function showMessage(text, focus = false) {
   message.textContent = text;
   message.hidden = !text;
+  if (text && focus) message.focus();
 }
 
-function showLookupMessage(text, success = false) {
+function showLookupMessage(text, success = false, focus = false) {
   lookupMessage.textContent = text;
   lookupMessage.hidden = !text;
   lookupMessage.classList.toggle('success', success);
+  if (text && focus) lookupMessage.focus();
+}
+
+function focusFirstMissing(formElement) {
+  const missing = [...formElement.querySelectorAll('[required]')].filter((field) => !field.value.trim());
+  for (const field of missing) field.setAttribute('aria-invalid', 'true');
+  missing[0]?.focus();
+}
+
+for (const field of document.querySelectorAll('input, select, textarea')) {
+  field.addEventListener('input', () => field.removeAttribute('aria-invalid'));
 }
 
 function renderBooking(booking) {
@@ -49,7 +62,7 @@ function renderBooking(booking) {
   document.querySelector('#result-party').textContent = `${booking.partySize} 人`;
   document.querySelector('#result-lamb').textContent = booking.lambQty ? `${booking.lambQty} 份` : '未预留';
   const status = document.querySelector('#lookup-status');
-  status.textContent = booking.status === 'cancelled' ? '已取消' : '已确认';
+  status.textContent = booking.status === 'cancelled' ? '已取消' : booking.status === 'arrived' ? '已到店' : '已确认';
   status.classList.toggle('cancelled', booking.status === 'cancelled');
   cancelButton.hidden = !booking.canCancel;
   lookupResult.hidden = false;
@@ -99,7 +112,7 @@ async function loadAvailability() {
 function closeDialog() {
   dialog.hidden = true;
   document.body.style.overflow = '';
-  submitButton.focus();
+  (focusBeforeDialog || submitButton).focus();
 }
 
 dateInput.addEventListener('change', loadAvailability);
@@ -108,14 +121,23 @@ closeButton.addEventListener('click', closeDialog);
 doneButton.addEventListener('click', closeDialog);
 manageLink.addEventListener('click', closeDialog);
 dialog.addEventListener('click', (event) => { if (event.target === dialog) closeDialog(); });
-document.addEventListener('keydown', (event) => { if (event.key === 'Escape' && !dialog.hidden) closeDialog(); });
+document.addEventListener('keydown', (event) => {
+  if (dialog.hidden) return;
+  if (event.key === 'Escape') closeDialog();
+  if (event.key !== 'Tab') return;
+  const controls = [closeButton, doneButton, manageLink];
+  const index = controls.indexOf(document.activeElement);
+  if (event.shiftKey && index <= 0) { event.preventDefault(); controls.at(-1).focus(); }
+  if (!event.shiftKey && index === controls.length - 1) { event.preventDefault(); controls[0].focus(); }
+});
 
 form.addEventListener('submit', async (event) => {
   event.preventDefault();
   showMessage('');
   const input = Object.fromEntries(new FormData(form));
   if (!input.date || !input.time || !input.partySize || !input.name?.trim() || !input.phone?.trim()) {
-    showMessage('请填写用餐日期、时间、人数、称呼和联系电话。');
+    showMessage('请填写用餐日期、时间、人数、称呼和联系电话。', true);
+    focusFirstMissing(form);
     return;
   }
   submitButton.disabled = true;
@@ -130,6 +152,7 @@ form.addEventListener('submit', async (event) => {
     document.querySelector('#confirmation-code').textContent = `预约编号：${result.code}`;
     lookupCode.value = result.code;
     lookupPhone.value = input.phone;
+    focusBeforeDialog = document.activeElement;
     dialog.hidden = false;
     document.body.style.overflow = 'hidden';
     closeButton.focus();
@@ -137,7 +160,7 @@ form.addEventListener('submit', async (event) => {
     dateInput.value = config.min;
     await loadAvailability();
   } catch (error) {
-    showMessage(error.message);
+    showMessage(error.message, true);
     if (error.message.includes('余量') || error.message.includes('座位')) await loadAvailability();
   } finally {
     submitButton.disabled = false;
@@ -153,7 +176,8 @@ lookupForm.addEventListener('submit', async (event) => {
   verifiedPhone = null;
   const input = Object.fromEntries(new FormData(lookupForm));
   if (!input.code?.trim() || !input.phone?.trim()) {
-    showLookupMessage('请填写预约编号和预留的联系电话。');
+    showLookupMessage('请填写预约编号和预留的联系电话。', false, true);
+    focusFirstMissing(lookupForm);
     return;
   }
   lookupButton.disabled = true;
@@ -166,7 +190,7 @@ lookupForm.addEventListener('submit', async (event) => {
     verifiedPhone = input.phone;
     renderBooking(booking);
   } catch (error) {
-    showLookupMessage(error.message);
+    showLookupMessage(error.message, false, true);
   } finally {
     lookupButton.disabled = false;
   }

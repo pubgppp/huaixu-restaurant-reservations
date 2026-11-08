@@ -10,6 +10,7 @@
     <script src="/app.js" type="module"></script>
   </head>
   <body>
+    <a class="skip-link" href="#top">跳转到主要内容</a>
     <header class="site-header">
       <a class="brand" href="#top" aria-label="槐序小馆，返回首页">
         <span class="brand-mark" aria-hidden="true">槐</span>
@@ -23,7 +24,7 @@
       </nav>
     </header>
 
-    <main id="top">
+    <main id="top" tabindex="-1">
       <section class="hero" aria-labelledby="hero-title">
         <div class="hero-copy">
           <p class="eyebrow"><span class="eyebrow-line"></span> 一餐一会 · 慢享此刻</p>
@@ -63,8 +64,8 @@
           <form id="booking-form" class="booking-form" novalidate>
             <div class="form-section-label"><span>01</span> 选择用餐安排</div>
             <div class="form-grid">
-              <div class="field"><label for="date">用餐日期 <span>*</span></label><input id="date" name="date" type="date" required /><small>可预约未来 30 天</small></div>
-              <div class="field"><label for="time">到店时间 <span>*</span></label><select id="time" name="time" required><option value="">请选择时间</option></select><small id="seat-hint">先选择日期查看时段</small></div>
+              <div class="field"><label for="date">用餐日期 <span>*</span></label><input id="date" name="date" type="date" aria-describedby="date-hint" required /><small id="date-hint">可预约未来 30 天</small></div>
+              <div class="field"><label for="time">到店时间 <span>*</span></label><select id="time" name="time" aria-describedby="seat-hint" required><option value="">请选择时间</option></select><small id="seat-hint">先选择日期查看时段</small></div>
               <div class="field"><label for="partySize">用餐人数 <span>*</span></label><select id="partySize" name="partySize" required><option value="">请选择人数</option><option value="1">1 人</option><option value="2">2 人</option><option value="3">3 人</option><option value="4">4 人</option><option value="5">5 人</option><option value="6">6 人</option><option value="7">7 人</option><option value="8">8 人</option></select><small>单次预约最多 8 人</small></div>
               <div class="field"><label for="lambQty">预留手抓羊排</label><select id="lambQty" name="lambQty"><option value="0">暂不预留</option></select><small id="stock-hint" aria-live="polite">选择日期后查看当日余量</small></div>
             </div>
@@ -74,7 +75,7 @@
               <div class="field"><label for="phone">联系电话 <span>*</span></label><input id="phone" name="phone" type="tel" autocomplete="tel" maxlength="24" placeholder="方便联系您的号码" required /></div>
               <div class="field full"><label for="note">备注 <span class="optional">选填</span></label><textarea id="note" name="note" maxlength="120" rows="3" placeholder="例如：靠窗座位、儿童餐椅等"></textarea></div>
             </div>
-            <p id="form-message" class="form-message" role="alert" hidden></p>
+            <p id="form-message" class="form-message" role="alert" tabindex="-1" hidden></p>
             <button id="submit-button" class="button button-submit" type="submit">确认预约 <span aria-hidden="true">↗</span></button>
             <p class="privacy-note">提交即表示您同意我们仅将联系方式用于本次预约沟通。本演示项目将预约信息保存在运行服务器的本地文件中。</p>
           </form>
@@ -93,7 +94,7 @@
             <form id="lookup-form" novalidate>
               <div class="field"><label for="lookup-code">预约编号</label><input id="lookup-code" name="code" autocomplete="off" placeholder="例如 HX-20261107-…" required /></div>
               <div class="field"><label for="lookup-phone">预留联系电话</label><input id="lookup-phone" name="phone" type="tel" autocomplete="tel" placeholder="预约时填写的号码" required /></div>
-              <p id="lookup-message" class="form-message" role="alert" hidden></p>
+              <p id="lookup-message" class="form-message" role="alert" tabindex="-1" hidden></p>
               <button id="lookup-button" class="button button-dark" type="submit">查看我的预约 <span aria-hidden="true">↗</span></button>
             </form>
             <div id="lookup-result" class="lookup-result" aria-live="polite" hidden>
@@ -111,7 +112,7 @@
       </section>
     </main>
 
-    <div id="confirmation" class="dialog-backdrop" hidden><div class="confirmation-card" role="dialog" aria-modal="true" aria-labelledby="confirmation-title"><button id="close-dialog" class="close-dialog" type="button" aria-label="关闭确认信息">×</button><span class="confirmation-icon">✓</span><p class="eyebrow dark">RESERVATION CONFIRMED</p><h2 id="confirmation-title">这一席，为您留好了。</h2><p id="confirmation-summary"></p><p id="confirmation-code" class="confirmation-code"></p><button id="done-button" class="button button-dark" type="button">好的，期待见面</button><a id="manage-link" class="manage-dialog-link" href="#manage-booking">查看或取消预约 →</a></div></div>
+    <div id="confirmation" class="dialog-backdrop" hidden><div class="confirmation-card" role="dialog" aria-modal="true" aria-labelledby="confirmation-title" aria-describedby="confirmation-summary"><button id="close-dialog" class="close-dialog" type="button" aria-label="关闭确认信息">×</button><span class="confirmation-icon">✓</span><p class="eyebrow dark">RESERVATION CONFIRMED</p><h2 id="confirmation-title">这一席，为您留好了。</h2><p id="confirmation-summary"></p><p id="confirmation-code" class="confirmation-code"></p><button id="done-button" class="button button-dark" type="button">好的，期待见面</button><a id="manage-link" class="manage-dialog-link" href="#manage-booking">查看或取消预约 →</a></div></div>
 
     <footer class="site-footer"><div class="footer-brand">槐序小馆 <span>HUAI XU · DINING</span></div><p>一餐一会，慢享此刻。<br />本网站为餐厅预约演示项目，非真实营业餐厅。</p><div class="footer-links"><a href="/staff">店员入口</a><a href="#top">返回顶部 ↑</a></div></footer>
   </body>

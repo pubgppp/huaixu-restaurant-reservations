@@ -17,6 +17,7 @@ function localDate() {
 function showMessage(text) {
   message.textContent = text;
   message.hidden = !text;
+  if (text) message.focus();
 }
 
 async function request(path, options = {}) {

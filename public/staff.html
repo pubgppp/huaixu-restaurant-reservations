@@ -10,11 +10,12 @@
     <link rel="stylesheet" href="/staff.css" />
   </head>
   <body>
+    <a class="skip-link" href="#staff-main">跳转到主要内容</a>
     <header class="site-header">
       <a class="brand" href="/" aria-label="槐序小馆，返回首页"><span class="brand-mark" aria-hidden="true">槐</span><span><strong>槐序小馆</strong><small>HUAI XU · DINING</small></span></a>
       <nav aria-label="店员导航"><a href="/">← 返回顾客页面</a></nav>
     </header>
-    <main class="staff-main">
+    <main id="staff-main" class="staff-main" tabindex="-1">
       <section class="staff-hero section-wrap" aria-labelledby="staff-title"><span class="section-number">STAFF / WORKSPACE</span><h1 id="staff-title">店员工作台<span>✳</span></h1><p>查看每日预约，掌握用餐人数与限量菜品预留情况。</p></section>
       <div class="section-wrap staff-content">
         <form id="staff-form" class="staff-form" novalidate>
@@ -22,7 +23,7 @@
           <div class="field"><label for="staff-date">查询日期</label><input id="staff-date" name="date" type="date" required /></div>
           <button id="staff-load" class="button button-dark" type="submit">查看预约 <span aria-hidden="true">↗</span></button>
         </form>
-        <p id="staff-message" class="staff-message" role="alert" hidden></p>
+        <p id="staff-message" class="staff-message" role="alert" tabindex="-1" hidden></p>
         <section id="staff-results" class="staff-results" aria-labelledby="results-title" hidden>
           <div class="staff-results-heading"><div><span class="section-number">DAILY OVERVIEW</span><h2 id="results-title">当日预约</h2></div><p id="results-date"></p></div>
           <div class="staff-stats" aria-label="当日汇总"><div><span>有效预约</span><strong id="stat-bookings">0</strong></div><div><span>预订座位</span><strong id="stat-seats">0</strong></div><div><span>羊排预留</span><strong id="stat-lamb">0</strong></div></div>
